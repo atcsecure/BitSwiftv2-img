@@ -15,6 +15,8 @@ QMAKE_CXXFLAGS = -fpermissive
 greaterThan(QT_MAJOR_VERSION, 4) {
     QT += widgets
     DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0
+	#QT +=  webkit
+	#QT +=  webkitwidgets
 }
 
 !include($$PWD/config.pri) {
@@ -268,6 +270,7 @@ HEADERS += src/qt/bitcoingui.h \
     src/qt/rpcconsole.h \
     src/version.h \
     src/netbase.h \
+	src/qt/chatwindow.h \
     src/clientversion.h \
     src/bloom.h \
     src/checkqueue.h \
@@ -364,6 +367,7 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/scrypt.cpp \
     src/pbkdf2.cpp \
     src/stealth.cpp \
+    src/qt/chatwindow.cpp \
     src/qt/blockbrowser.cpp
 
 RESOURCES += \
@@ -383,6 +387,7 @@ FORMS += \
     src/qt/forms/rpcconsole.ui \
     src/qt/forms/optionsdialog.ui \
 	src/qt/forms/statisticspage.ui \
+	src/qt/forms/chatwindow.ui \
     src/qt/forms/blockbrowser.ui
 
 contains(USE_QRCODE, 1) {
