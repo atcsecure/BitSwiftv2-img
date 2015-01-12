@@ -3,7 +3,7 @@ TARGET = bitswift-qt
 VERSION = 2.0.0.1
 INCLUDEPATH += src src/json src/qt
 DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
-QT += core gui network
+QT += core gui network webkit webkitwidgets
 CONFIG += no_include_pwd
 CONFIG += thread
 CONFIG += static
@@ -226,6 +226,7 @@ HEADERS += src/qt/bitcoingui.h \
     src/walletdb.h \
     src/script.h \
     src/stealth.h \
+	src/smessage.h \
     src/init.h \
     src/irc.h \
     src/mruset.h \
@@ -295,6 +296,7 @@ HEADERS += src/qt/bitcoingui.h \
     src/sph_types.h \
     src/threadsafety.h \
     src/txdb-leveldb.h \
+	src/qt/backuppage.h \
     src/qt/blockbrowser.h
 
 SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
@@ -367,7 +369,9 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/scrypt.cpp \
     src/pbkdf2.cpp \
     src/stealth.cpp \
+	src/smessage.cpp \
     src/qt/chatwindow.cpp \
+	src/qt/backuppage.cpp \
     src/qt/blockbrowser.cpp
 
 RESOURCES += \
@@ -388,6 +392,7 @@ FORMS += \
     src/qt/forms/optionsdialog.ui \
 	src/qt/forms/statisticspage.ui \
 	src/qt/forms/chatwindow.ui \
+	src/qt/forms/backuppage.ui \
     src/qt/forms/blockbrowser.ui
 
 contains(USE_QRCODE, 1) {
