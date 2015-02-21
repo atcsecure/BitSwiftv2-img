@@ -493,10 +493,3 @@ bool ECC_InitSanityCheck() {
     return true;
 }
 
-
-EC_KEY* CKey::GetECKey()
-{
-    return pkey;
-}
-
-

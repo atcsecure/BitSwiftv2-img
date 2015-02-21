@@ -164,7 +164,7 @@ public:
     bool ECC_InitSanityCheck(void);
 	
 	// XBRIDGECODE returns EC_KEY
-    EC_KEY * GetECKey();
+    //EC_KEY * GetECKey();
 
 };
 

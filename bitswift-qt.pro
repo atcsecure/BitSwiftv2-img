@@ -2,13 +2,13 @@ TEMPLATE = app
 TARGET = bitswift-qt
 VERSION = 2.0.0.1
 INCLUDEPATH += src src/json src/qt
-DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
 QT += core gui network webkit webkitwidgets
 CONFIG += no_include_pwd
 CONFIG += thread
 CONFIG += static
 
 win32:QMAKE_LFLAGS *= -Wl,--large-address-aware -static
+
 
 QMAKE_CXXFLAGS = -fpermissive
 
@@ -22,18 +22,51 @@ greaterThan(QT_MAJOR_VERSION, 4) {
 !include($$PWD/config.pri) {
    error(Failed to include config.pri)
  }
-#BOOST_LIB_SUFFIX=-mgw48-mt-s-1_55
-#BOOST_INCLUDE_PATH=C:/deps/boost_1_55_0
-#BOOST_LIB_PATH=C:/deps/boost_1_55_0/stage/lib
-#BDB_INCLUDE_PATH=C:/deps/db-4.8.30.NC/build_unix
-#BDB_LIB_PATH=C:/deps/db-4.8.30.NC/build_unix
-#OPENSSL_INCLUDE_PATH=C:/deps/openssl-1.0.1i/include
-#OPENSSL_LIB_PATH=C:/deps/openssl-1.0.1i
-#MINIUPNPC_INCLUDE_PATH=C:/deps/
-#MINIUPNPC_LIB_PATH=C:/deps/miniupnpc
-#QRENCODE_INCLUDE_PATH=C:/deps/qrencode-3.4.3
-#QRENCODE_LIB_PATH=C:/deps/qrencode-3.4.3/.libs
 
+
+
+
+
+INCLUDEPATH += src src/json src/qt
+
+LIBS += \
+    $$join(BOOST_LIB_PATH,,-L,) \
+    $$join(BDB_LIB_PATH,,-L,) \
+    $$join(OPENSSL_LIB_PATH,,-L,) \
+    $$join(QRENCODE_LIB_PATH,,-L,)
+
+LIBS += \
+    -lssl \
+    -lcrypto \
+    -ldb_cxx$$BDB_LIB_SUFFIX \
+    -lpthread
+
+
+windows {
+    LIBS += \
+        -lshlwapi \
+        -lws2_32 \
+        -lole32 \
+        -loleaut32 \
+        -luuid \
+        -lgdi32 \
+        -lboost_system-mgw49-mt-s-1_55 \
+        -lboost_filesystem-mgw49-mt-s-1_55 \
+        -lboost_program_options-mgw49-mt-s-1_55 \
+        -lboost_thread-mgw49-mt-s-1_55 \
+        -lboost_date_time-mgw49-mt-s-1_55
+}
+
+
+
+unix {
+    LIBS += \
+        -lboost_system \
+        -lboost_filesystem \
+        -lboost_program_options \
+        -lboost_thread \
+        -lboost_date_time
+}
 
 # for boost 1.37, add -mt to the boost libraries
 # use: qmake BOOST_LIB_SUFFIX=-mt
@@ -68,9 +101,10 @@ QMAKE_LFLAGS *= -fstack-protector-all --param ssp-buffer-size=1
 # This can be enabled for Windows, when we switch to MinGW >= 4.4.x.
 }
 # for extra security on Windows: enable ASLR and DEP via GCC linker flags
-win32:QMAKE_LFLAGS *= -Wl,--large-address-aware -static
-win32:QMAKE_LFLAGS += -static-libgcc -static-libstdc++
-
+#win32:QMAKE_LFLAGS += -static-libgcc -static-libstdc++
+#win32:QMAKE_LFLAGS *= -Wl,--large-address-aware -static
+win32:QMAKE_LFLAGS *= -Wl,--dynamicbase -Wl,--nxcompat
+QMAKE_CXXFLAGS = -fpermissive
 
 # use: qmake "USE_QRCODE=1"
 # libqrencode (http://fukuchi.org/works/qrencode/index.en.html) must be installed for support
@@ -124,7 +158,7 @@ contains(BITCOIN_NEED_QT_PLUGINS, 1) {
 INCLUDEPATH += src/leveldb/include src/leveldb/helpers
 LIBS += $$PWD/src/leveldb/libleveldb.a $$PWD/src/leveldb/libmemenv.a
 SOURCES += src/txdb-leveldb.cpp \
-    src/bloom.cpp \
+	src/bloom.cpp \
     src/hash.cpp \
     src/aes_helper.c \
     src/blake.c \
@@ -141,7 +175,17 @@ SOURCES += src/txdb-leveldb.cpp \
 	src/fugue.c \
 	src/hamsi.c \
 	src/shabal.c \
-    src/whirlpool.c
+    src/whirlpool.c \
+    src/qt/messagedialog/messagedelegate.cpp \
+    src/qt/messagedialog/messagedialog.cpp \
+    src/qt/messagedialog/messagesmodel.cpp \
+    src/qt/messagedialog/userdelegate.cpp \
+    src/qt/messagedialog/usersmodel.cpp \
+	src/lz4/lz4.c \
+	src/message.cpp \
+    src/messagedb.cpp \
+    src/xbridgeconnector.cpp
+
 !win32 {
     # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
     genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a
@@ -187,6 +231,36 @@ contains(USE_O3, 1) {
 
 QMAKE_CXXFLAGS_WARN_ON = -fdiagnostics-show-option -Wall -Wextra -Wno-ignored-qualifiers -Wformat -Wformat-security -Wno-unused-parameter -Wstack-protector
 
+greaterThan(QT_MAJOR_VERSION, 4) {
+    win32:QMAKE_CXXFLAGS_WARN_ON = \
+        -fdiagnostics-show-option \
+        -Wall \
+        -Wextra \
+        -Wno-ignored-qualifiers \
+        -Wformat \
+        -Wformat-security \
+        -Wno-unused-parameter \
+        -Wstack-protector
+    macx:QMAKE_CXXFLAGS_WARN_ON = \
+        -fdiagnostics-show-option \
+        -Wall \
+        -Wextra \
+        -Wformat \
+        -Wformat-security \
+        -Wno-unused-parameter \
+        -Wstack-protector
+}
+lessThan(QT_MAJOR_VERSION, 5) {
+    QMAKE_CXXFLAGS_WARN_ON = \
+        -fdiagnostics-show-option \
+        -Wall \
+        -Wextra \
+        -Wno-ignored-qualifiers \
+        -Wformat \
+        -Wformat-security \
+        -Wno-unused-parameter \
+        -Wstack-protector
+}
 
 # Input
 DEPENDPATH += src src/json src/qt
@@ -297,7 +371,22 @@ HEADERS += src/qt/bitcoingui.h \
     src/threadsafety.h \
     src/txdb-leveldb.h \
 	src/qt/backuppage.h \
-    src/qt/blockbrowser.h
+    src/qt/blockbrowser.h \
+    src/qt/macnotificationhandler.h \    
+    src/qt/messagedialog/messagedialog.h \
+    src/util/verify.h \
+    src/qt/messagedialog/messagesmodel.h \
+    src/qt/messagedialog/messagedelegate.h \
+	src/message.h \
+    src/messagedb.h \
+    src/qt/messagedialog/message_metatype.h \
+	src/lz4/lz4.h \
+    src/qt/messagedialog/userdelegate.h \
+    src/qt/messagedialog/usersmodel.h \
+	src/lz4/lz4.h \
+    src/FastDelegate.h \
+    src/xbridgeconnector.h \
+    src/xbridgepacket.h
 
 SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/qt/transactiontablemodel.cpp \
@@ -374,6 +463,8 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
 	src/qt/backuppage.cpp \
     src/qt/blockbrowser.cpp
 
+	
+	
 RESOURCES += \
     src/qt/bitcoin.qrc
 
@@ -393,7 +484,8 @@ FORMS += \
 	src/qt/forms/statisticspage.ui \
 	src/qt/forms/chatwindow.ui \
 	src/qt/forms/backuppage.ui \
-    src/qt/forms/blockbrowser.ui
+    src/qt/forms/blockbrowser.ui \
+	src/qt/messagedialog/messagedialog.ui 
 
 contains(USE_QRCODE, 1) {
 HEADERS += src/qt/qrcodedialog.h
