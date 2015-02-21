@@ -11,6 +11,7 @@
 #include "init.h"
 #include "ui_interface.h"
 #include "kernel.h"
+#include "message.h"
 #include "stealth.h"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
@@ -2885,6 +2886,27 @@ bool static AlreadyHave(CTxDB& txdb, const CInv& inv)
 
 
 
+//*****************************************************************************
+//*****************************************************************************
+std::vector<std::string> getLocalBitcoinAddresses()
+{
+    std::vector<std::string> result;
+
+    {
+        LOCK(pwalletMain->cs_wallet);
+        BOOST_FOREACH(const PAIRTYPE(CTxDestination, std::string) & item, pwalletMain->mapAddressBook)
+        {
+            const CBitcoinAddress & address = item.first;
+            if (IsMine(*pwalletMain, address.Get()))
+            {
+                result.push_back(address.ToString());
+            }
+        }
+    }
+
+    return result;
+}
+
 
 // The message start string is designed to be unlikely to occur in normal data.
 // The characters are rarely used upper ASCII, not valid as UTF-8, and produce
@@ -3458,7 +3480,55 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         pfrom->PushMessage("reply", hashReply, (int)0, scriptPubKey);
     }
 
+	// XRIDGECODE messages
+    else if (strCommand == "message")
+    {
+        // received message
+        Message msg;
+        vRecv >> msg;
 
+        // check known
+        uint256 hash = msg.getNetworkHash();
+        if (pfrom->setKnown.count(hash) == 0)
+        {
+            pfrom->setKnown.insert(hash);
+
+            bool isForMe = false;
+            if (!msg.process(isForMe))
+            {
+                pfrom->Misbehaving(10);
+            }
+
+            if (!isForMe)
+            {
+                // relay, if message not for me
+                msg.broadcast();
+            }
+        }
+    }
+    else if (strCommand == "msgack")
+    {
+        // message delivered
+        uint256 hash;
+        vRecv >> hash;
+
+        if (pfrom->setKnown.count(hash) == 0)
+        {
+            pfrom->setKnown.insert(hash);
+
+            if (!Message::processReceived(hash))
+            {
+                // relay, if not for me
+                LOCK(cs_vNodes);
+                BOOST_FOREACH(CNode* pnode, vNodes)
+                {
+                    pnode->PushMessage("msgack", hash);
+                }
+            }
+        }
+    }
+
+// end xbridge code
     else if (strCommand == "reply")
     {
         uint256 hashReply;

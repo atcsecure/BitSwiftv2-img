@@ -162,6 +162,10 @@ public:
 
     static bool CheckSignatureElement(const unsigned char *vch, int len, bool half);
     bool ECC_InitSanityCheck(void);
+	
+	// XBRIDGECODE returns EC_KEY
+    EC_KEY * GetECKey();
+
 };
 
 #endif

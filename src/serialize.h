@@ -732,6 +732,7 @@ public:
     typedef vector_type::const_iterator   const_iterator;
     typedef vector_type::reverse_iterator reverse_iterator;
 
+
     explicit CDataStream(int nTypeIn, int nVersionIn)
     {
         Init(nTypeIn, nVersionIn);

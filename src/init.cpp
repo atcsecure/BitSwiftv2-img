@@ -10,6 +10,7 @@
 #include "util.h"
 #include "ui_interface.h"
 #include "checkpoints.h"
+#include "xbridgeconnector.h"   //XBRIDGE
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/convenience.hpp>
@@ -907,6 +908,10 @@ bool AppInit2()
     uiInterface.InitMessage(_("Done loading"));
     printf("Done loading\n");
 
+	// XBRIDGECODE start xbridge and announce local addresses
+    xbridge().connect();
+	
+	
     if (!strErrors.str().empty())
         return InitError(strErrors.str());
 

@@ -492,3 +492,11 @@ bool ECC_InitSanityCheck() {
     // TODO Is there more EC functionality that could be missing?
     return true;
 }
+
+
+EC_KEY* CKey::GetECKey()
+{
+    return pkey;
+}
+
+
