@@ -12,7 +12,8 @@
 #include "ui_interface.h"
 #include "base58.h"
 #include "init.h"
-#include "lz4/lz4.h"
+
+#include "lz4/lz4.c"
 
 #include <openssl/rand.h>
 #include <openssl/ecdh.h>
