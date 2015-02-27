@@ -159,12 +159,12 @@ bool Message::process(bool & isForMe)
         uiInterface.NotifyNewMessage(*this);
 
         // send message received
-        LOCK(cs_vNodes);
-        BOOST_FOREACH(CNode * pnode, vNodes)
-        {
-            uint256 hash = getStaticHash();
-            pnode->PushMessage("msgack", hash);
-        }
+//        LOCK(cs_vNodes);
+//        BOOST_FOREACH(CNode * pnode, vNodes)
+//        {
+//            uint256 hash = getStaticHash();
+//            pnode->PushMessage("msgack", hash);
+//        }
     }
     return true;
 }

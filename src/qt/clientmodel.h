@@ -2,6 +2,7 @@
 #define CLIENTMODEL_H
 
 #include <QObject>
+#include <QVariant>
 
 class OptionsModel;
 class AddressTableModel;
@@ -61,6 +62,9 @@ signals:
 
     //! Asynchronous error notification
     void error(const QString &title, const QString &message, bool modal);
+
+    // incoming message
+    void newMessage(QVariant message);
 
 public slots:
     void updateTimer();

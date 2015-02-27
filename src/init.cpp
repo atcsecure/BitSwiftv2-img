@@ -908,15 +908,14 @@ bool AppInit2()
     uiInterface.InitMessage(_("Done loading"));
     printf("Done loading\n");
 
-	// XBRIDGECODE start xbridge and announce local addresses
-    xbridge().connect();
-	
-	
     if (!strErrors.str().empty())
         return InitError(strErrors.str());
 
      // Add wallet transactions that aren't already in a block to mapTransactions
     pwalletMain->ReacceptWalletTransactions();
+
+    // start xbridge and announce local addresses
+    xbridge().connect();
 
 #if !defined(QT_GUI)
     // Loop until process is exit()ed from shutdown() function,
