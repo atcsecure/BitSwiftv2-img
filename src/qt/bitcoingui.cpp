@@ -426,11 +426,12 @@ void BitcoinGUI::createToolBars()
     toolbar->addAction(receiveCoinsAction);
     toolbar->addAction(historyAction);
     toolbar->addAction(addressBookAction);
-// toolbar->addAction(tradeAction);
-//    toolbar->addAction(statisticsAction);
+    // toolbar->addAction(tradeAction);
+    // toolbar->addAction(statisticsAction);
     toolbar->addAction(blockAction);
     toolbar->addAction(backupAction);
-    toolbar->addAction(chatAction);
+    // toolbar->addAction(chatAction);
+    toolbar->addAction(messagesAction);
     QWidget* spacer = new QWidget();
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     toolbar->addWidget(spacer);
@@ -480,9 +481,6 @@ void BitcoinGUI::setClientModel(ClientModel *clientModel)
 
         //incoming messages
         VERIFY(connect(clientModel, SIGNAL(newMessage(QVariant)), this, SLOT(incomingMessage(QVariant))));
-
-        // status of payments
-        VERIFY(connect(clientModel, SIGNAL(paymentStatusChanged(QString)), sendCoinsPage, SLOT(updateEntryStatus(QString))));
 
         rpcConsole->setClientModel(clientModel);
         addressBookPage->setOptionsModel(clientModel->getOptionsModel());
@@ -641,7 +639,7 @@ void BitcoinGUI::setNumBlocks(int count, int nTotalBlocks)
         {
             progressBarLabel->setText(tr("Synchronizing with network..."));
             progressBarLabel->setVisible(false);
-            progressBar->setFormat(tr("%n%", "", nPercentageDone));
+            progressBar->setFormat(tr("%n", "", nPercentageDone));
             progressBar->setMaximum(nTotalBlocks);
             progressBar->setValue(count);
             progressBar->setVisible(false);
