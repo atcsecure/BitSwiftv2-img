@@ -3,6 +3,7 @@ TARGET = bitswift-qt
 VERSION = 2.0.0.1
 INCLUDEPATH += src src/json src/qt
 QT += core gui network webkit webkitwidgets
+DEFINES += QT_GUI
 CONFIG += no_include_pwd
 CONFIG += thread
 CONFIG += static
@@ -22,12 +23,6 @@ greaterThan(QT_MAJOR_VERSION, 4) {
 !include($$PWD/config.pri) {
    error(Failed to include config.pri)
  }
-
-
-
-
-
-INCLUDEPATH += src src/json src/qt
 
 LIBS += \
     $$join(BOOST_LIB_PATH,,-L,) \
@@ -144,6 +139,7 @@ contains(USE_DBUS, 1) {
 contains(USE_IPV6, -) {
     message(Building without IPv6 support)
 } else {
+    message(Building with IPv6 support)
     count(USE_IPV6, 0) {
         USE_IPV6=1
     }
@@ -383,8 +379,7 @@ HEADERS += src/qt/bitcoingui.h \
 	src/lz4/lz4.h \
     src/qt/messagedialog/userdelegate.h \
     src/qt/messagedialog/usersmodel.h \
-	src/lz4/lz4.h \
-    src/FastDelegate.h \
+	src/FastDelegate.h \
     src/xbridgeconnector.h \
     src/xbridgepacket.h
 
