@@ -16,7 +16,7 @@ MOC_DIR = build
 UI_DIR = build
 
 QMAKE_CXXFLAGS = -fpermissive
-win32:QMAKE_LFLAGS *= -Wl,--large-address-aware -static
+win32:QMAKE_LFLAGS *= -Wl,--large-address-aware # -static
 
 greaterThan(QT_MAJOR_VERSION, 4) {
     QT += widgets
