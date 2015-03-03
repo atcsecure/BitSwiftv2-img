@@ -1,17 +1,22 @@
 TEMPLATE = app
 TARGET = bitswift-qt
 VERSION = 2.0.0.1
-INCLUDEPATH += src src/json src/qt
+
 QT += core gui network webkit webkitwidgets
+
 DEFINES += QT_GUI
-CONFIG += no_include_pwd
-CONFIG += thread
-CONFIG += static
 
-win32:QMAKE_LFLAGS *= -Wl,--large-address-aware -static
+CONFIG += \
+    no_include_pwd \
+    thread \
+    static
 
+OBJECTS_DIR = build
+MOC_DIR = build
+UI_DIR = build
 
 QMAKE_CXXFLAGS = -fpermissive
+win32:QMAKE_LFLAGS *= -Wl,--large-address-aware -static
 
 greaterThan(QT_MAJOR_VERSION, 4) {
     QT += widgets
@@ -22,60 +27,16 @@ greaterThan(QT_MAJOR_VERSION, 4) {
 
 !include($$PWD/config.pri) {
    error(Failed to include config.pri)
- }
-
-LIBS += \
-    $$join(BOOST_LIB_PATH,,-L,) \
-    $$join(BDB_LIB_PATH,,-L,) \
-    $$join(OPENSSL_LIB_PATH,,-L,) \
-    $$join(QRENCODE_LIB_PATH,,-L,)
-
-LIBS += \
-    -lssl \
-    -lcrypto \
-    -ldb_cxx$$BDB_LIB_SUFFIX \
-    -lpthread
-
-
-windows {
-    LIBS += \
-        -lshlwapi \
-        -lws2_32 \
-        -lole32 \
-        -loleaut32 \
-        -luuid \
-        -lgdi32 \
-        -lboost_system-mgw49-mt-s-1_55 \
-        -lboost_filesystem-mgw49-mt-s-1_55 \
-        -lboost_program_options-mgw49-mt-s-1_55 \
-        -lboost_thread-mgw49-mt-s-1_55 \
-        -lboost_date_time-mgw49-mt-s-1_55
 }
 
-
-
-unix {
-    LIBS += \
-        -lboost_system \
-        -lboost_filesystem \
-        -lboost_program_options \
-        -lboost_thread \
-        -lboost_date_time
-}
-
-# for boost 1.37, add -mt to the boost libraries
-# use: qmake BOOST_LIB_SUFFIX=-mt
-# for boost thread win32 with _win32 sufix
-# use: BOOST_THREAD_LIB_SUFFIX=_win32-...
-# or when linking against a specific BerkelyDB version: BDB_LIB_SUFFIX=-4.8
-
-# Dependency library locations can be customized with:
-#    BOOST_INCLUDE_PATH, BOOST_LIB_PATH, BDB_INCLUDE_PATH,
-#    BDB_LIB_PATH, OPENSSL_INCLUDE_PATH and OPENSSL_LIB_PATH respectively
-
-OBJECTS_DIR = build
-MOC_DIR = build
-UI_DIR = build
+INCLUDEPATH += \
+    $$BOOST_INCLUDE_PATH \
+    $$BDB_INCLUDE_PATH \
+    $$OPENSSL_INCLUDE_PATH \
+    $$QRENCODE_INCLUDE_PATH \
+    src \
+    src/json \
+    src/qt
 
 # use: qmake "RELEASE=1"
 contains(RELEASE, 1) {
@@ -152,7 +113,7 @@ contains(BITCOIN_NEED_QT_PLUGINS, 1) {
 }
 
 INCLUDEPATH += src/leveldb/include src/leveldb/helpers
-LIBS += $$PWD/src/leveldb/libleveldb.a $$PWD/src/leveldb/libmemenv.a
+LIBS += $$PWD/src/leveldb/libleveldb.a # $$PWD/src/leveldb/libmemenv.a
 SOURCES += src/txdb-leveldb.cpp \
 	src/bloom.cpp \
     src/hash.cpp \
@@ -571,19 +532,42 @@ macx:QMAKE_LFLAGS_THREAD += -pthread
 macx:QMAKE_CXXFLAGS_THREAD += -pthread
 
 # Set libraries and includes at end, to use platform-defined defaults if not overridden
-INCLUDEPATH += $$BOOST_INCLUDE_PATH $$BDB_INCLUDE_PATH $$OPENSSL_INCLUDE_PATH $$QRENCODE_INCLUDE_PATH
-LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB_PATH,,-L,) $$join(QRENCODE_LIB_PATH,,-L,)
-LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX
 # -lgdi32 has to happen after -lcrypto (see  #681)
-windows:LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
-LIBS += -lboost_system$$BOOST_LIB_SUFFIX -lboost_filesystem$$BOOST_LIB_SUFFIX -lboost_program_options$$BOOST_LIB_SUFFIX -lboost_thread$$BOOST_THREAD_LIB_SUFFIX
-windows:LIBS += -lboost_chrono$$BOOST_LIB_SUFFIX
 
 contains(RELEASE, 1) {
     !windows:!macx {
         # Linux: turn dynamic linking back on for c/c++ runtime libraries
         LIBS += -Wl,-Bdynamic
     }
+}
+
+LIBS += \
+    $$join(BOOST_LIB_PATH,,-L,) \
+    $$join(BDB_LIB_PATH,,-L,) \
+    $$join(OPENSSL_LIB_PATH,,-L,) \
+    $$join(QRENCODE_LIB_PATH,,-L,)
+
+LIBS += \
+    -lssl \
+    -lcrypto \
+    -ldb_cxx$$BDB_LIB_SUFFIX \
+    -lpthread \
+    -lboost_system$$BOOST_LIB_SUFFIX \
+    -lboost_filesystem$$BOOST_LIB_SUFFIX \
+    -lboost_program_options$$BOOST_LIB_SUFFIX \
+    -lboost_date_time$$BOOST_LIB_SUFFIX \
+    -lboost_thread$$BOOST_LIB_SUFFIX
+
+windows {
+    LIBS += \
+        -lmswsock \
+        -lshlwapi \
+        -lws2_32 \
+        -lole32 \
+        -loleaut32 \
+        -luuid \
+        -lgdi32 \
+        -lboost_chrono$$BOOST_LIB_SUFFIX
 }
 
 system($$QMAKE_LRELEASE -silent $$_PRO_FILE_)
