@@ -70,6 +70,7 @@ AddressBookPage::AddressBookPage(Mode mode, Tabs tab, QWidget *parent) :
     QAction *copyLabelAction = new QAction(tr("Copy &Label"), this);
     QAction *copyAddressAction = new QAction(ui->copyToClipboard->text(), this);
     QAction * copyPubKey = new QAction(trUtf8("Copy public &key"), this);
+    QAction * copyXBridgeAddress  = new QAction(trUtf8("Copy &XBridge address"), this);
     QAction *editAction = new QAction(tr("&Edit"), this);
     QAction *showQRCodeAction = new QAction(ui->showQRCode->text(), this);
     QAction *signMessageAction = new QAction(ui->signMessage->text(), this);
@@ -82,6 +83,7 @@ AddressBookPage::AddressBookPage(Mode mode, Tabs tab, QWidget *parent) :
     contextMenu->addAction(copyAddressAction);
     contextMenu->addAction(copyLabelAction);
     contextMenu->addAction(copyPubKey);
+    contextMenu->addAction(copyXBridgeAddress);
     contextMenu->addAction(editAction);
     if(tab == SendingTab)
         contextMenu->addAction(deleteAction);
@@ -96,15 +98,26 @@ AddressBookPage::AddressBookPage(Mode mode, Tabs tab, QWidget *parent) :
     }
 
     // Connect signals for context menu actions
-    VERIFY(connect(copyAddressAction, SIGNAL(triggered()), this, SLOT(on_copyToClipboard_clicked())));
-    VERIFY(connect(copyLabelAction, SIGNAL(triggered()), this, SLOT(onCopyLabelAction())));
-    VERIFY(connect(copyPubKey, SIGNAL(triggered()), this, SLOT(onCopyPublicKeyAction())));
-    VERIFY(connect(editAction, SIGNAL(triggered()), this, SLOT(onEditAction())));
-    VERIFY(connect(deleteAction, SIGNAL(triggered()), this, SLOT(on_deleteButton_clicked())));
-    VERIFY(connect(showQRCodeAction, SIGNAL(triggered()), this, SLOT(on_showQRCode_clicked())));
-    VERIFY(connect(signMessageAction, SIGNAL(triggered()), this, SLOT(on_signMessage_clicked())));
-    VERIFY(connect(verifyMessageAction, SIGNAL(triggered()), this, SLOT(on_verifyMessage_clicked())));
-    VERIFY(connect(messagesAction, SIGNAL(triggered()), this, SLOT(on_messages_clicked())));
+    VERIFY(connect(copyAddressAction,   SIGNAL(triggered()),
+                   this,                SLOT(on_copyToClipboard_clicked())));
+    VERIFY(connect(copyLabelAction,     SIGNAL(triggered()),
+                   this,                SLOT(onCopyLabelAction())));
+    VERIFY(connect(copyPubKey,          SIGNAL(triggered()),
+                   this,                SLOT(onCopyPublicKeyAction())));
+    VERIFY(connect(copyXBridgeAddress,  SIGNAL(triggered()),
+                   this,                SLOT(onCopyXBridgeAddress())));
+    VERIFY(connect(editAction,          SIGNAL(triggered()),
+                   this,                SLOT(onEditAction())));
+    VERIFY(connect(deleteAction,        SIGNAL(triggered()),
+                   this,                SLOT(on_deleteButton_clicked())));
+    VERIFY(connect(showQRCodeAction,    SIGNAL(triggered()),
+                   this,                SLOT(on_showQRCode_clicked())));
+    VERIFY(connect(signMessageAction,   SIGNAL(triggered()),
+                   this,                SLOT(on_signMessage_clicked())));
+    VERIFY(connect(verifyMessageAction, SIGNAL(triggered()),
+                   this,                SLOT(on_verifyMessage_clicked())));
+    VERIFY(connect(messagesAction,      SIGNAL(triggered()),
+                   this,                SLOT(on_messages_clicked())));
 
     VERIFY(connect(ui->tableView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextualMenu(QPoint))));
 
@@ -245,6 +258,38 @@ void AddressBookPage::onCopyPublicKeyAction()
     }
 
     QApplication::clipboard()->setText(QString::fromStdString(EncodeBase58(pubKey.Raw())));
+}
+
+//*****************************************************************************
+//*****************************************************************************
+void AddressBookPage::onCopyXBridgeAddress()
+{
+    if (!ui->tableView->selectionModel())
+    {
+        QMessageBox::warning(this, "", trUtf8("No selected rows"));
+        return;
+    }
+
+    QModelIndexList indexes = ui->tableView->selectionModel()->selectedRows(AddressTableModel::Address);
+    if (indexes.isEmpty())
+    {
+        QMessageBox::warning(this, "", trUtf8("No selected rows"));
+        return;
+    }
+
+    QModelIndex idx = indexes.at(0);
+    QString address = idx.data().toString();
+
+    std::vector<unsigned char> tmp;
+    DecodeBase58Check(address.toStdString(), tmp);
+    if (tmp.empty())
+    {
+        QMessageBox::warning(this, "", trUtf8("Error decode address"));
+        return;
+    }
+
+    // QMessageBox::information(this, "", EncodeBase64(&tmp[1], tmp.size()-1).c_str());
+    QApplication::clipboard()->setText(QString::fromStdString(EncodeBase64(&tmp[1], tmp.size()-1)));
 }
 
 //*****************************************************************************

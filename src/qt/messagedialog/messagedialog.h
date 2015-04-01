@@ -63,6 +63,9 @@ private slots:
 
     void addrContextMenu(QPoint point);
 
+    // TODO xbridge transaction testing
+    void on_transactionButton_clicked();
+
 private:
     std::vector<std::string> getLocalAddresses() const;
 

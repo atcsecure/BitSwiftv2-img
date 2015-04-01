@@ -22,7 +22,8 @@ private:
 
     enum
     {
-        SERVER_LISTEN_PORT = 30330
+        SERVER_LISTEN_PORT = 30330,
+        TIMER_INTERVAL = 30
     };
 
 public:
@@ -32,10 +33,21 @@ public:
     bool announceLocalAddresses();
     bool sendXChatMessage(const Message & m);
 
+    uint256 sendXBridgeTransaction(const std::vector<unsigned char> & from,
+                                   const std::string & fromCurrency,
+                                   const boost::uint32_t fromAmount,
+                                   const std::vector<unsigned char> & to,
+                                   const std::string & toCurrency,
+                                   const boost::uint32_t toAmount);
+
+    bool transactionReceived(const uint256 & hash);
+
 private:
     void run();
 
     void disconnect();
+
+    void onTimer();
 
     void doReadHeader(XBridgePacketPtr packet,
                       const std::size_t offset = 0);
@@ -58,14 +70,19 @@ private:
     bool processInvalid(XBridgePacketPtr packet);
     bool processXChatMessage(XBridgePacketPtr packet);
 
+    bool processExchangeWallets(XBridgePacketPtr packet);
+
 private:
     boost::asio::io_service      m_io;
     boost::asio::ip::tcp::socket m_socket;
     boost::thread                m_thread;
+    boost::asio::deadline_timer  m_timer;
 
 
     typedef std::map<const int, fastdelegate::FastDelegate1<XBridgePacketPtr, bool> > PacketProcessorsMap;
     PacketProcessorsMap m_processors;
+
+    std::map<uint256, XBridgePacketPtr> m_pendingTransactions;
 };
 
 //******************************************************************************
