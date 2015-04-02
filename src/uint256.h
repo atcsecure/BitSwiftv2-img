@@ -351,7 +351,17 @@ public:
         return (unsigned char*)&pn[WIDTH];
     }
 
-    unsigned int size()
+    const unsigned char* begin() const
+    {
+        return (unsigned char*)&pn[0];
+    }
+
+    const unsigned char* end() const
+    {
+        return (unsigned char*)&pn[WIDTH];
+    }
+
+    unsigned int size() const
     {
         return sizeof(pn);
     }
@@ -568,6 +578,11 @@ public:
             memcpy(pn, &vch[0], sizeof(pn));
         else
             *this = 0;
+    }
+
+    explicit uint256(const unsigned char * ch)
+    {
+        memcpy(pn, ch, sizeof(pn));
     }
 };
 

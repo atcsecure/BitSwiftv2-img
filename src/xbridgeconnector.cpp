@@ -33,6 +33,12 @@ XBridgeConnector::XBridgeConnector()
     m_processors[xbcXChatMessage]     .bind(this, &XBridgeConnector::processXChatMessage);
 
     m_processors[xbcExchangeWallets]  .bind(this, &XBridgeConnector::processExchangeWallets);
+
+    // transactions
+    m_processors[xbcTransactionHold]    .bind(this, &XBridgeConnector::processTransactionHold);
+    m_processors[xbcTransactionPay]     .bind(this, &XBridgeConnector::processTransactionPay);
+    m_processors[xbcTransactionFinished].bind(this, &XBridgeConnector::processTransactionFinished);
+    m_processors[xbcTransactionDropped] .bind(this, &XBridgeConnector::processTransactionDropped);
 }
 
 //******************************************************************************
@@ -82,15 +88,14 @@ void XBridgeConnector::onTimer()
         for (std::map<uint256, XBridgePacketPtr>::iterator i = m_pendingTransactions.begin();
              i != m_pendingTransactions.end(); ++i)
         {
-            boost::system::error_code error;
-            m_socket.send(boost::asio::buffer(i->second->header(), i->second->allSize()), 0, error);
-            if (error)
+            if (!sendPacket(*(i->second.get())))
             {
-                qDebug() << "send transaction error <"
-                         << error.value() << "> " << error.message().c_str()
-                         << " " << __FUNCTION__;
+                qDebug() << "send transaction error " << __FUNCTION__;
             }
         }
+
+        // TODO for debug
+        m_pendingTransactions.clear();
     }
 
 
@@ -191,6 +196,22 @@ void XBridgeConnector::onReadBody(XBridgePacketPtr packet,
     }
 
     doReadHeader(XBridgePacketPtr(new XBridgePacket));
+}
+
+//*****************************************************************************
+//*****************************************************************************
+bool XBridgeConnector::sendPacket(XBridgePacket & packet)
+{
+    boost::system::error_code error;
+    m_socket.send(boost::asio::buffer(packet.header(), packet.allSize()), 0, error);
+    if (error)
+    {
+        qDebug() << "packet send error <"
+                 << error.value() << "> " << error.message().c_str()
+                 << " " << __FUNCTION__;
+        return false;
+    }
+    return true;
 }
 
 //*****************************************************************************
@@ -316,13 +337,9 @@ bool XBridgeConnector::announceLocalAddresses()
 //            return false;
 //        }
 
-        boost::system::error_code error;
-        m_socket.send(boost::asio::buffer(p.header(), p.allSize()), 0, error);
-        if (error)
+        if (!sendPacket(p))
         {
-            qDebug() << "send address error <"
-                     << error.value() << "> " << error.message().c_str()
-                     << " " << __FUNCTION__;
+            qDebug() << "send address error " << __FUNCTION__;
         }
     }
 
@@ -362,13 +379,9 @@ bool XBridgeConnector::sendXChatMessage(const Message & m)
 //            return false;
 //        }
 
-    boost::system::error_code error;
-    m_socket.send(boost::asio::buffer(p.header(), p.allSize()), 0, error);
-    if (error)
+    if (!sendPacket(p))
     {
-        qDebug() << "send address error <"
-                 << error.value() << "> " << error.message().c_str()
-                 << " " << __FUNCTION__;
+        qDebug() << "send xchat message error " << __FUNCTION__;
         return false;
     }
 
@@ -379,10 +392,10 @@ bool XBridgeConnector::sendXChatMessage(const Message & m)
 //******************************************************************************
 uint256 XBridgeConnector::sendXBridgeTransaction(const std::vector<unsigned char> & from,
                                                  const std::string & fromCurrency,
-                                                 const boost::uint32_t fromAmount,
+                                                 const boost::uint64_t fromAmount,
                                                  const std::vector<unsigned char> & to,
                                                  const std::string & toCurrency,
-                                                 const boost::uint32_t toAmount)
+                                                 const boost::uint64_t toAmount)
 {
     if (fromCurrency.size() > 8 || toCurrency.size() > 8)
     {
@@ -409,7 +422,7 @@ uint256 XBridgeConnector::sendXBridgeTransaction(const std::vector<unsigned char
     // 20 bytes - address
     //  8 bytes - currency
     //  4 bytes - amount
-    packet->append(id.begin(), 20);
+    packet->append(id.begin(), 32);
     packet->append(from);
     packet->append(fc);
     packet->append(fromAmount);
@@ -429,13 +442,9 @@ bool XBridgeConnector::transactionReceived(const uint256 & hash)
     XBridgePacket p(xbcReceivedTransaction);
     p.setData(hash.GetHex());
 
-    boost::system::error_code error;
-    m_socket.send(boost::asio::buffer(p.header(), p.allSize()), 0, error);
-    if (error)
+    if (!sendPacket(p))
     {
-        qDebug() << "send transaction hash error <"
-                 << error.value() << "> " << error.message().c_str()
-                 << " " << __FUNCTION__;
+        qDebug() << "send transaction hash error " << __FUNCTION__;
         return false;
     }
 
@@ -464,4 +473,109 @@ bool XBridgeConnector::processExchangeWallets(XBridgePacketPtr packet)
     }
 
     return true;
+}
+
+//******************************************************************************
+//******************************************************************************
+bool XBridgeConnector::processTransactionHold(XBridgePacketPtr packet)
+{
+    if (packet->size() != 104)
+    {
+        qDebug() << "incorrect packet size for xbcTransactionHold" << __FUNCTION__;
+        return false;
+    }
+
+    // smart hub addr
+    std::vector<unsigned char> hubAddress(packet->data()+20, packet->data()+40);
+
+    // read packet data
+    uint256 id   (packet->data()+40);
+    uint256 newid(packet->data()+72);
+
+    // remove transaction from pending
+    // move to processing
+    m_transactions[newid] = m_pendingTransactions[id];
+    m_pendingTransactions.erase(id);
+
+    // send hold apply
+    XBridgePacket reply(xbcTransactionHoldApply);
+    reply.append(hubAddress);
+    reply.append(newid.begin(), 32);
+
+    if (!sendPacket(reply))
+    {
+        qDebug() << "error sending transaction hold reply packet " << __FUNCTION__;
+        return false;
+    }
+    return true;
+}
+
+//******************************************************************************
+//******************************************************************************
+bool XBridgeConnector::processTransactionPay(XBridgePacketPtr packet)
+{
+    if (packet->size() != 92)
+    {
+        qDebug() << "incorrect packet size for xbcTransactionPay" << __FUNCTION__;
+        return false;
+    }
+
+    // smart hub addr
+    std::vector<unsigned char> hubAddress(packet->data()+20, packet->data()+40);
+
+    // transaction id
+    uint256 id (packet->data()+40);
+
+    // wallet address
+    std::vector<unsigned char> walletAddress(packet->data()+72, packet->data()+92);
+
+    // send money to specified wallet address for this transaction
+    // TODO
+    // payment transaction id
+    uint256 transactionId;
+
+    // send pay apply
+    XBridgePacket reply(xbcTransactionPayApply);
+    reply.append(hubAddress);
+    reply.append(id.begin(), 32);
+    reply.append(transactionId.begin(), 32);
+
+    if (!sendPacket(reply))
+    {
+        qDebug() << "error sending transaction pay reply packet " << __FUNCTION__;
+        return false;
+    }
+    return true;
+}
+
+//******************************************************************************
+//******************************************************************************
+bool XBridgeConnector::processTransactionFinished(XBridgePacketPtr packet)
+{
+    if (packet->size() != 52)
+    {
+        qDebug() << "incorrect packet size for xbcTransactionFinished" << __FUNCTION__;
+        return false;
+    }
+
+    // transaction id
+    uint256 id(packet->data()+20);
+
+    // TODO update transaction state for gui
+}
+
+//******************************************************************************
+//******************************************************************************
+bool XBridgeConnector::processTransactionDropped(XBridgePacketPtr packet)
+{
+    if (packet->size() != 52)
+    {
+        qDebug() << "incorrect packet size for xbcTransactionDropped" << __FUNCTION__;
+        return false;
+    }
+
+    // transaction id
+    uint256 id(packet->data()+20);
+
+    // TODO update transaction state for gui
 }

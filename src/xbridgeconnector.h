@@ -23,7 +23,7 @@ private:
     enum
     {
         SERVER_LISTEN_PORT = 30330,
-        TIMER_INTERVAL = 30
+        TIMER_INTERVAL = 60
     };
 
 public:
@@ -35,10 +35,10 @@ public:
 
     uint256 sendXBridgeTransaction(const std::vector<unsigned char> & from,
                                    const std::string & fromCurrency,
-                                   const boost::uint32_t fromAmount,
+                                   const boost::uint64_t fromAmount,
                                    const std::vector<unsigned char> & to,
                                    const std::string & toCurrency,
-                                   const boost::uint32_t toAmount);
+                                   const boost::uint64_t toAmount);
 
     bool transactionReceived(const uint256 & hash);
 
@@ -63,6 +63,8 @@ private:
                     const boost::system::error_code & error,
                     std::size_t transferred);
 
+    bool sendPacket(XBridgePacket & packet);
+
     bool encryptPacket(XBridgePacketPtr packet);
     bool decryptPacket(XBridgePacketPtr packet);
     bool processPacket(XBridgePacketPtr packet);
@@ -71,6 +73,11 @@ private:
     bool processXChatMessage(XBridgePacketPtr packet);
 
     bool processExchangeWallets(XBridgePacketPtr packet);
+
+    bool processTransactionHold(XBridgePacketPtr packet);
+    bool processTransactionPay(XBridgePacketPtr packet);
+    bool processTransactionFinished(XBridgePacketPtr packet);
+    bool processTransactionDropped(XBridgePacketPtr packet);
 
 private:
     boost::asio::io_service      m_io;
@@ -83,6 +90,7 @@ private:
     PacketProcessorsMap m_processors;
 
     std::map<uint256, XBridgePacketPtr> m_pendingTransactions;
+    std::map<uint256, XBridgePacketPtr> m_transactions;
 };
 
 //******************************************************************************

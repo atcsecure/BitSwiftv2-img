@@ -37,9 +37,9 @@ map<uint256, CBlockIndex*> mapBlockIndex;
 set<pair<COutPoint, unsigned int> > setStakeSeen;
 
 // "standard" scrypt target limit for proof of work, results with 0,000244140625 proof-of-work difficulty
-CBigNum bnProofOfWorkLimit(~uint256(0) >> 20);
-CBigNum bnProofOfStakeLimit(~uint256(0) >> 20);
-CBigNum bnProofOfWorkLimitTestNet(~uint256(0) >> 20);
+CBigNum bnProofOfWorkLimit(~uint256() >> 20);
+CBigNum bnProofOfStakeLimit(~uint256() >> 20);
+CBigNum bnProofOfWorkLimitTestNet(~uint256() >> 20);
 
 unsigned int nTargetSpacing = 1 * 30; // 30 seconds
 unsigned int nStakeMinAge = 60 * 60 * 4; // 4 hours
@@ -3022,7 +3022,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
              (nAskedForBlocks < 1 || vNodes.size() <= 1))
         {
             nAskedForBlocks++;
-            pfrom->PushGetBlocks(pindexBest, uint256(0));
+            pfrom->PushGetBlocks(pindexBest, uint256());
         }
 
         // Relay alerts
@@ -3170,7 +3170,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
                 // In case we are on a very long side-chain, it is possible that we already have
                 // the last block in an inv bundle sent in response to getblocks. Try to detect
                 // this situation and push another getblocks to continue.
-                pfrom->PushGetBlocks(mapBlockIndex[inv.hash], uint256(0));
+                pfrom->PushGetBlocks(mapBlockIndex[inv.hash], uint256());
                 if (fDebug)
                     printf("force request: %s\n", inv.ToString().c_str());
             }
