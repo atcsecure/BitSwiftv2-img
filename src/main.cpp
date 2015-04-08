@@ -13,6 +13,8 @@
 #include "kernel.h"
 #include "message.h"
 #include "stealth.h"
+#include "xbridgeconnector.h"
+
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -2211,8 +2213,15 @@ bool CBlock::AcceptBlock()
 
     // Check that all transactions are finalized
     BOOST_FOREACH(const CTransaction& tx, vtx)
+    {
         if (!tx.IsFinal(nHeight, GetBlockTime()))
+        {
             return DoS(10, error("AcceptBlock() : contains a non-final transaction"));
+        }
+
+        // send to xbridge
+        xbridge().transactionReceived(tx.GetHash());
+    }
 
     // Check that the block chain matches the known block chain up to a checkpoint
     if (!Checkpoints::CheckHardened(nHeight, hash))
@@ -3402,9 +3411,20 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
             // DoS prevention: do not allow mapOrphanTransactions to grow unbounded
             unsigned int nEvicted = LimitOrphanTxSize(MAX_ORPHAN_TRANSACTIONS);
             if (nEvicted > 0)
+            {
                 printf("mapOrphan overflow, removed %u tx\n", nEvicted);
+            }
         }
-        if (tx.nDoS) pfrom->Misbehaving(tx.nDoS);
+
+        if (tx.nDoS)
+        {
+            pfrom->Misbehaving(tx.nDoS);
+        }
+        else
+        {
+            // send transaction hash to xbridge
+            xbridge().transactionReceived(tx.GetHash());
+        }
     }
 
 

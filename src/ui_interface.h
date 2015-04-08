@@ -98,6 +98,12 @@ public:
      * called when new message received
      */
     boost::signals2::signal<void (const Message & message)> NotifyNewMessage;
+
+    /**
+     * @brief NotifyXBridgeExchangeWalletsReceived
+     */
+    typedef std::pair<std::string, std::string> StringPair;
+    boost::signals2::signal<void (const std::vector<StringPair> & status)> NotifyXBridgeExchangeWalletsReceived;
 };
 
 extern CClientUIInterface uiInterface;

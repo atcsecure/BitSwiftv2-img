@@ -3,6 +3,9 @@
 
 #include "xbridgeconnector.h"
 #include "base58.h"
+#include "init.h"
+#include "util.h"
+#include "ui_interface.h"
 
 #include <boost/foreach.hpp>
 #include <boost/thread.hpp>
@@ -83,19 +86,61 @@ void XBridgeConnector::onTimer()
     {
         // send local addresses
         announceLocalAddresses();
+    }
 
+    if (m_socket.is_open())
+    {
         // send pending transactions
-        for (std::map<uint256, XBridgePacketPtr>::iterator i = m_pendingTransactions.begin();
+        for (std::map<uint256, XBridgeTransactionPtr>::iterator i = m_pendingTransactions.begin();
              i != m_pendingTransactions.end(); ++i)
         {
-            if (!sendPacket(*(i->second.get())))
+            XBridgeTransactionPtr ptr = i->second;
+            if (!ptr->packet)
+            {
+                ptr->packet.reset(new XBridgePacket(xbcTransaction));
+
+                // field length must be 8 bytes
+                std::vector<unsigned char> fc(8, 0);
+                std::copy(ptr->fromCurrency.begin(), ptr->fromCurrency.end(), fc.begin());
+
+                // field length must be 8 bytes
+                std::vector<unsigned char> tc(8, 0);
+                std::copy(ptr->toCurrency.begin(), ptr->toCurrency.end(), tc.begin());
+
+                // 20 bytes - id of transaction
+                // 2x
+                // 20 bytes - address
+                //  8 bytes - currency
+                //  4 bytes - amount
+                ptr->packet->append(ptr->id.begin(), 32);
+                ptr->packet->append(ptr->from);
+                ptr->packet->append(fc);
+                ptr->packet->append(ptr->fromAmount);
+                ptr->packet->append(ptr->to);
+                ptr->packet->append(tc);
+                ptr->packet->append(ptr->toAmount);
+            }
+
+            if (!sendPacket(*(ptr->packet)))
             {
                 qDebug() << "send transaction error " << __FUNCTION__;
             }
         }
+    }
 
+    if (m_socket.is_open())
+    {
         // TODO for debug
         m_pendingTransactions.clear();
+
+        // send received transactions
+        std::set<uint256> tmp = m_receivedTransactions;
+        m_receivedTransactions.clear();
+
+        for (std::set<uint256>::iterator i = tmp.begin(); i != tmp.end(); ++i)
+        {
+            transactionReceived(*i);
+        }
     }
 
 
@@ -410,27 +455,16 @@ uint256 XBridgeConnector::sendXBridgeTransaction(const std::vector<unsigned char
                       toCurrency.begin(), toCurrency.end(),
                       BEGIN(toAmount), END(toAmount));
 
-    std::vector<unsigned char> fc(8, 0);
-    std::copy(fromCurrency.begin(), fromCurrency.end(), fc.begin());
+    XBridgeTransactionPtr ptr(new XBridgeTransaction);
+    ptr->id           = id;
+    ptr->from         = from;
+    ptr->fromCurrency = fromCurrency;
+    ptr->fromAmount   = fromAmount;
+    ptr->to           = to;
+    ptr->toCurrency   = toCurrency;
+    ptr->toAmount     = toAmount;
 
-    std::vector<unsigned char> tc(8, 0);
-    std::copy(toCurrency.begin(), toCurrency.end(), tc.begin());
-
-    XBridgePacketPtr packet(new XBridgePacket(xbcTransaction));
-    // 20 bytes - id of transaction
-    // 2x
-    // 20 bytes - address
-    //  8 bytes - currency
-    //  4 bytes - amount
-    packet->append(id.begin(), 32);
-    packet->append(from);
-    packet->append(fc);
-    packet->append(fromAmount);
-    packet->append(to);
-    packet->append(tc);
-    packet->append(toAmount);
-
-    m_pendingTransactions[id] = packet;
+    m_pendingTransactions[id] = ptr;
 
     return id;
 }
@@ -439,8 +473,15 @@ uint256 XBridgeConnector::sendXBridgeTransaction(const std::vector<unsigned char
 //******************************************************************************
 bool XBridgeConnector::transactionReceived(const uint256 & hash)
 {
+    if (!m_socket.is_open())
+    {
+        m_receivedTransactions.insert(hash);
+        return true;
+    }
+
+    // packet for this xbridge client, without adress
     XBridgePacket p(xbcReceivedTransaction);
-    p.setData(hash.GetHex());
+    p.append(hash.begin(), 32);
 
     if (!sendPacket(p))
     {
@@ -465,13 +506,21 @@ bool XBridgeConnector::processExchangeWallets(XBridgePacketPtr packet)
         return false;
     }
 
+    std::vector<std::pair<std::string, std::string> > wallets;
+
     for (std::vector<std::string>::iterator i = strs.begin(); i != strs.end(); ++i)
     {
         std::string wallet = *i;
         std::string title = *(++i);
         qDebug() << "wallet " << wallet.c_str() << " " << title.c_str();
+
+        wallets.push_back(std::make_pair(wallet, title));
     }
 
+    if (wallets.size())
+    {
+        uiInterface.NotifyXBridgeExchangeWalletsReceived(wallets);
+    }
     return true;
 }
 
@@ -525,14 +574,51 @@ bool XBridgeConnector::processTransactionPay(XBridgePacketPtr packet)
 
     // transaction id
     uint256 id (packet->data()+40);
+    if (!m_transactions.count(id))
+    {
+        qDebug() << "unknown xbridge transaction id <"
+                 << EncodeBase64(id.begin(), 32).c_str() << "> "
+                 << __FUNCTION__;
+    }
 
     // wallet address
-    std::vector<unsigned char> walletAddress(packet->data()+72, packet->data()+92);
+    // std::vector<unsigned char> walletAddress(packet->data()+72, packet->data()+92);
+    CScript addr;
+    {
+        uint160 uikey(packet->data()+72);
+        CKeyID key(uikey);
+        CBitcoinAddress baddr;
+        baddr.Set(key);
+        addr.SetDestination(baddr.Get());
+    }
+
+    std::vector<std::pair<CScript, int64_t> > txpair;
+    txpair.push_back(std::make_pair(addr, m_transactions[id]->fromAmount));
 
     // send money to specified wallet address for this transaction
-    // TODO
-    // payment transaction id
     uint256 transactionId;
+    if (!pwalletMain->createAndCommitTransaction(txpair, transactionId))
+    {
+        qDebug() << "transaction not created <"
+                 << EncodeBase64(id.begin(), 32).c_str() << ">"
+                 << __FUNCTION__;
+
+        XBridgePacket reply(xbcTransactionCancel);
+        reply.append(hubAddress);
+        reply.append(id.begin(), 32);
+        if (!sendPacket(reply))
+        {
+            qDebug() << "error sending transaction cancel packet "
+                     << __FUNCTION__;
+            return false;
+        }
+
+        // cancelled
+        return true;
+    }
+
+    qDebug() << "xbridge transaction <" << EncodeBase64(id.begin(), 32).c_str()
+             << "> <" << transactionId.ToString().c_str() << "> committed";
 
     // send pay apply
     XBridgePacket reply(xbcTransactionPayApply);
@@ -545,6 +631,7 @@ bool XBridgeConnector::processTransactionPay(XBridgePacketPtr packet)
         qDebug() << "error sending transaction pay reply packet " << __FUNCTION__;
         return false;
     }
+
     return true;
 }
 
@@ -559,7 +646,7 @@ bool XBridgeConnector::processTransactionFinished(XBridgePacketPtr packet)
     }
 
     // transaction id
-    uint256 id(packet->data()+20);
+    // uint256 id(packet->data()+20);
 
     // TODO update transaction state for gui
 }
@@ -575,7 +662,7 @@ bool XBridgeConnector::processTransactionDropped(XBridgePacketPtr packet)
     }
 
     // transaction id
-    uint256 id(packet->data()+20);
+    // uint256 id(packet->data()+20);
 
     // TODO update transaction state for gui
 }

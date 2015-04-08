@@ -24,7 +24,7 @@ class base_uint
 {
 protected:
     enum { WIDTH=BITS/32 };
-    unsigned int pn[WIDTH];
+    uint32_t pn[WIDTH];
 public:
 
     bool operator!() const
@@ -464,6 +464,11 @@ public:
         else
             *this = 0;
     }
+
+    explicit uint160(const unsigned char * ch)
+    {
+        memcpy(pn, ch, sizeof(pn));
+    }
 };
 
 inline bool operator==(const uint160& a, uint64_t b)                         { return (base_uint160)a == b; }
@@ -635,10 +640,6 @@ inline const uint256 operator|(const uint256& a, const uint256& b)      { return
 inline const uint256 operator+(const uint256& a, const uint256& b)      { return (base_uint256)a +  (base_uint256)b; }
 inline const uint256 operator-(const uint256& a, const uint256& b)      { return (base_uint256)a -  (base_uint256)b; }
 
-
-
-
-
 //////////////////////////////////////////////////////////////////////////////
 //
 // uint512
@@ -757,12 +758,6 @@ inline const uint512 operator&(const uint512& a, const uint512& b)      { return
 inline const uint512 operator|(const uint512& a, const uint512& b)      { return (base_uint512)a |  (base_uint512)b; }
 inline const uint512 operator+(const uint512& a, const uint512& b)      { return (base_uint512)a +  (base_uint512)b; }
 inline const uint512 operator-(const uint512& a, const uint512& b)      { return (base_uint512)a -  (base_uint512)b; }
-
-
-
-
-
-
 
 #ifdef TEST_UINT256
 

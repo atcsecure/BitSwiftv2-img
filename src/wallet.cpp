@@ -1673,6 +1673,29 @@ bool CWallet::CreateTransaction(CScript scriptPubKey, int64_t nValue, CWalletTx&
     return rv;
 }
 
+//*****************************************************************************
+//*****************************************************************************
+bool CWallet::createAndCommitTransaction(const std::vector<std::pair<CScript, int64_t> > & rcpts,
+                                         uint256 & hash)
+{
+    CWalletTx wtx;
+    CReserveKey rkeys(this);
+    int64_t fee = 0;
+
+    if (!CreateTransaction(rcpts, wtx, rkeys, fee))
+    {
+        return error("CreateTransaction failed");
+    }
+
+    if (!CommitTransaction(wtx, rkeys))
+    {
+        return error("CommitTransaction failed");
+    }
+
+    hash = wtx.GetHash();
+
+    return true;
+}
 
 
 bool CWallet::NewStealthAddress(std::string& sError, std::string& sLabel, CStealthAddress& sxAddr)

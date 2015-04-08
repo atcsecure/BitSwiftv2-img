@@ -742,14 +742,3 @@ bool MessagesDialog::resendUndelivered(const std::vector<std::string> & addresse
 
     return true;
 }
-
-//*****************************************************************************
-// TODO xbridge transaction testing
-//*****************************************************************************
-void MessagesDialog::on_transactionButton_clicked()
-{
-    // TODO fix to address
-    std::vector<unsigned char> from = DecodeBase64("rjHZxibNTUmDvG52fy8aUdS2tq0=");
-    std::vector<unsigned char> to   = DecodeBase64("taq6VYKMr7iJzjFBEQlIhyytGx0=");
-    xbridge().sendXBridgeTransaction(from, "BSW", 100 * 1000000, to, "XC", 10 * 1000000);
-}

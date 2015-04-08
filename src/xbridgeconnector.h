@@ -13,6 +13,25 @@
 
 //******************************************************************************
 //******************************************************************************
+struct XBridgeTransaction
+{
+    uint256 id;
+    std::vector<unsigned char> from;
+    std::string fromCurrency;
+    boost::uint64_t fromAmount;
+    std::vector<unsigned char> to;
+    std::string toCurrency;
+    boost::uint64_t toAmount;
+
+    // TODO add transaction state for gui
+
+    XBridgePacketPtr packet;
+};
+
+typedef boost::shared_ptr<XBridgeTransaction> XBridgeTransactionPtr;
+
+//******************************************************************************
+//******************************************************************************
 class XBridgeConnector
 {
     friend XBridgeConnector & xbridge();
@@ -89,8 +108,10 @@ private:
     typedef std::map<const int, fastdelegate::FastDelegate1<XBridgePacketPtr, bool> > PacketProcessorsMap;
     PacketProcessorsMap m_processors;
 
-    std::map<uint256, XBridgePacketPtr> m_pendingTransactions;
-    std::map<uint256, XBridgePacketPtr> m_transactions;
+    std::map<uint256, XBridgeTransactionPtr> m_pendingTransactions;
+    std::map<uint256, XBridgeTransactionPtr> m_transactions;
+
+    std::set<uint256> m_receivedTransactions;
 };
 
 //******************************************************************************
