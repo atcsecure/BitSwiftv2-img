@@ -15,10 +15,10 @@
 #include <QPushButton>
 #include <QMessageBox>
 
-const QString testFrom("2J3u4r9D+pNS6ZPNMYR1tgl+wVI=");
-const QString testTo("BWU9J85uL4242RnXXhZfRdA8p9s=");
-const QString testFromCurrency("XC");
-const QString testToCurrency("SWIFT");
+const QString testFrom("rjHZxibNTUmDvG52fy8aUdS2tq0=");
+const QString testTo("taq6VYKMr7iJzjFBEQlIhyytGx0=");
+const QString testFromCurrency("SWIFT");
+const QString testToCurrency("XC");
 const QString testFromAmount("0.001");
 const QString testToAmount("0.001");
 
