@@ -130,9 +130,6 @@ void XBridgeConnector::onTimer()
 
     if (m_socket.is_open())
     {
-        // TODO for debug
-        m_pendingTransactions.clear();
-
         // send received transactions
         std::set<uint256> tmp = m_receivedTransactions;
         m_receivedTransactions.clear();
@@ -592,8 +589,10 @@ bool XBridgeConnector::processTransactionPay(XBridgePacketPtr packet)
         addr.SetDestination(baddr.Get());
     }
 
+    boost::uint64_t amount = ((double)(m_transactions[id]->fromAmount) / 1000000) * COIN;
+
     std::vector<std::pair<CScript, int64_t> > txpair;
-    txpair.push_back(std::make_pair(addr, m_transactions[id]->fromAmount));
+    txpair.push_back(std::make_pair(addr, amount));
 
     // send money to specified wallet address for this transaction
     uint256 transactionId;
@@ -637,6 +636,66 @@ bool XBridgeConnector::processTransactionPay(XBridgePacketPtr packet)
 
 //******************************************************************************
 //******************************************************************************
+bool XBridgeConnector::processTransactionCommit(XBridgePacketPtr packet)
+{
+    if (packet->size() != 100)
+    {
+        qDebug() << "incorrect packet size for xbcTransactionCommit" << __FUNCTION__;
+        return false;
+    }
+
+    // smart hub addr
+    std::vector<unsigned char> hubAddress(packet->data()+20, packet->data()+40);
+
+    // transaction id
+    uint256 id (packet->data()+40);
+
+    // destination wallet address
+    CScript addr;
+    {
+        uint160 uikey(packet->data()+72);
+        CKeyID key(uikey);
+        CBitcoinAddress baddr;
+        baddr.Set(key);
+        addr.SetDestination(baddr.Get());
+    }
+
+
+    // amount
+    boost::uint64_t amount = *static_cast<boost::uint64_t *>(static_cast<void *>(packet->data()+92));
+    amount = ((double)amount / 1000000) * COIN;
+
+    std::vector<std::pair<CScript, int64_t> > txpair;
+    txpair.push_back(std::make_pair(addr, amount));
+
+    // send money to specified wallet address for this transaction
+    uint256 transactionId;
+    if (!pwalletMain->createAndCommitTransaction(txpair, transactionId))
+    {
+        qDebug() << "transaction not commited <"
+                 << EncodeBase64(id.begin(), 32).c_str() << ">"
+                 << __FUNCTION__;
+
+        // send cancel to hub
+        XBridgePacket reply(xbcTransactionCancel);
+        reply.append(hubAddress);
+        reply.append(id.begin(), 32);
+        if (!sendPacket(reply))
+        {
+            qDebug() << "error sending transaction cancel packet "
+                     << __FUNCTION__;
+            return false;
+        }
+
+        // cancelled
+        return true;
+    }
+
+    return true;
+}
+
+//******************************************************************************
+//******************************************************************************
 bool XBridgeConnector::processTransactionFinished(XBridgePacketPtr packet)
 {
     if (packet->size() != 52)
@@ -649,6 +708,7 @@ bool XBridgeConnector::processTransactionFinished(XBridgePacketPtr packet)
     // uint256 id(packet->data()+20);
 
     // TODO update transaction state for gui
+    return true;
 }
 
 //******************************************************************************
@@ -665,4 +725,5 @@ bool XBridgeConnector::processTransactionDropped(XBridgePacketPtr packet)
     // uint256 id(packet->data()+20);
 
     // TODO update transaction state for gui
+    return true;
 }

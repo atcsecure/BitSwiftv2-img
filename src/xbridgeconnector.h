@@ -95,6 +95,7 @@ private:
 
     bool processTransactionHold(XBridgePacketPtr packet);
     bool processTransactionPay(XBridgePacketPtr packet);
+    bool processTransactionCommit(XBridgePacketPtr packet);
     bool processTransactionFinished(XBridgePacketPtr packet);
     bool processTransactionDropped(XBridgePacketPtr packet);
 
