@@ -10,6 +10,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
+#include <boost/thread/mutex.hpp>
 
 //******************************************************************************
 //******************************************************************************
@@ -109,6 +110,7 @@ private:
     typedef std::map<const int, fastdelegate::FastDelegate1<XBridgePacketPtr, bool> > PacketProcessorsMap;
     PacketProcessorsMap m_processors;
 
+    boost::mutex                             m_txLocker;
     std::map<uint256, XBridgeTransactionPtr> m_pendingTransactions;
     std::map<uint256, XBridgeTransactionPtr> m_transactions;
 

@@ -40,6 +40,7 @@ XBridgeConnector::XBridgeConnector()
     // transactions
     m_processors[xbcTransactionHold]    .bind(this, &XBridgeConnector::processTransactionHold);
     m_processors[xbcTransactionPay]     .bind(this, &XBridgeConnector::processTransactionPay);
+    m_processors[xbcTransactionCommit]  .bind(this, &XBridgeConnector::processTransactionCommit);
     m_processors[xbcTransactionFinished].bind(this, &XBridgeConnector::processTransactionFinished);
     m_processors[xbcTransactionDropped] .bind(this, &XBridgeConnector::processTransactionDropped);
 }
@@ -90,41 +91,46 @@ void XBridgeConnector::onTimer()
 
     if (m_socket.is_open())
     {
-        // send pending transactions
-        for (std::map<uint256, XBridgeTransactionPtr>::iterator i = m_pendingTransactions.begin();
-             i != m_pendingTransactions.end(); ++i)
+        if (m_txLocker.try_lock())
         {
-            XBridgeTransactionPtr ptr = i->second;
-            if (!ptr->packet)
+            // send pending transactions
+            for (std::map<uint256, XBridgeTransactionPtr>::iterator i = m_pendingTransactions.begin();
+                 i != m_pendingTransactions.end(); ++i)
             {
-                ptr->packet.reset(new XBridgePacket(xbcTransaction));
+                XBridgeTransactionPtr ptr = i->second;
+                if (!ptr->packet)
+                {
+                    ptr->packet.reset(new XBridgePacket(xbcTransaction));
 
-                // field length must be 8 bytes
-                std::vector<unsigned char> fc(8, 0);
-                std::copy(ptr->fromCurrency.begin(), ptr->fromCurrency.end(), fc.begin());
+                    // field length must be 8 bytes
+                    std::vector<unsigned char> fc(8, 0);
+                    std::copy(ptr->fromCurrency.begin(), ptr->fromCurrency.end(), fc.begin());
 
-                // field length must be 8 bytes
-                std::vector<unsigned char> tc(8, 0);
-                std::copy(ptr->toCurrency.begin(), ptr->toCurrency.end(), tc.begin());
+                    // field length must be 8 bytes
+                    std::vector<unsigned char> tc(8, 0);
+                    std::copy(ptr->toCurrency.begin(), ptr->toCurrency.end(), tc.begin());
 
-                // 20 bytes - id of transaction
-                // 2x
-                // 20 bytes - address
-                //  8 bytes - currency
-                //  4 bytes - amount
-                ptr->packet->append(ptr->id.begin(), 32);
-                ptr->packet->append(ptr->from);
-                ptr->packet->append(fc);
-                ptr->packet->append(ptr->fromAmount);
-                ptr->packet->append(ptr->to);
-                ptr->packet->append(tc);
-                ptr->packet->append(ptr->toAmount);
+                    // 20 bytes - id of transaction
+                    // 2x
+                    // 20 bytes - address
+                    //  8 bytes - currency
+                    //  4 bytes - amount
+                    ptr->packet->append(ptr->id.begin(), 32);
+                    ptr->packet->append(ptr->from);
+                    ptr->packet->append(fc);
+                    ptr->packet->append(ptr->fromAmount);
+                    ptr->packet->append(ptr->to);
+                    ptr->packet->append(tc);
+                    ptr->packet->append(ptr->toAmount);
+                }
+
+                if (!sendPacket(*(ptr->packet)))
+                {
+                    qDebug() << "send transaction error " << __FUNCTION__;
+                }
             }
 
-            if (!sendPacket(*(ptr->packet)))
-            {
-                qDebug() << "send transaction error " << __FUNCTION__;
-            }
+            m_txLocker.unlock();
         }
     }
 
@@ -461,7 +467,10 @@ uint256 XBridgeConnector::sendXBridgeTransaction(const std::vector<unsigned char
     ptr->toCurrency   = toCurrency;
     ptr->toAmount     = toAmount;
 
-    m_pendingTransactions[id] = ptr;
+    {
+        boost::mutex::scoped_lock l(m_txLocker);
+        m_pendingTransactions[id] = ptr;
+    }
 
     return id;
 }
@@ -540,8 +549,11 @@ bool XBridgeConnector::processTransactionHold(XBridgePacketPtr packet)
 
     // remove transaction from pending
     // move to processing
-    m_transactions[newid] = m_pendingTransactions[id];
-    m_pendingTransactions.erase(id);
+    {
+        boost::mutex::scoped_lock l(m_txLocker);
+        m_transactions[newid] = m_pendingTransactions[id];
+        m_pendingTransactions.erase(id);
+    }
 
     // send hold apply
     XBridgePacket reply(xbcTransactionHoldApply);
@@ -571,11 +583,25 @@ bool XBridgeConnector::processTransactionPay(XBridgePacketPtr packet)
 
     // transaction id
     uint256 id (packet->data()+40);
-    if (!m_transactions.count(id))
     {
-        qDebug() << "unknown xbridge transaction id <"
-                 << EncodeBase64(id.begin(), 32).c_str() << "> "
-                 << __FUNCTION__;
+        boost::mutex::scoped_lock l(m_txLocker);
+        if (!m_transactions.count(id))
+        {
+            qDebug() << "unknown xbridge transaction id <"
+                     << EncodeBase64(id.begin(), 32).c_str() << "> "
+                     << __FUNCTION__;
+            // TODO
+            return false;
+        }
+
+        if (!m_transactions[id])
+        {
+            qDebug() << "empty xbridge transaction id <"
+                     << EncodeBase64(id.begin(), 32).c_str() << "> "
+                     << __FUNCTION__;
+            // TODO
+            return false;
+        }
     }
 
     // wallet address
@@ -689,6 +715,17 @@ bool XBridgeConnector::processTransactionCommit(XBridgePacketPtr packet)
 
         // cancelled
         return true;
+    }
+
+    // send commit apply to hub
+    XBridgePacket reply(xbcTransactionCommitApply);
+    reply.append(hubAddress);
+    reply.append(id.begin(), 32);
+    if (!sendPacket(reply))
+    {
+        qDebug() << "error sending transaction commit apply packet "
+                 << __FUNCTION__;
+        return false;
     }
 
     return true;

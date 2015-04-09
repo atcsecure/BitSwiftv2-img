@@ -19,7 +19,7 @@ const QString testFrom("rjHZxibNTUmDvG52fy8aUdS2tq0=");
 const QString testTo("taq6VYKMr7iJzjFBEQlIhyytGx0=");
 const QString testFromCurrency("SWIFT");
 const QString testToCurrency("XC");
-const QString testFromAmount("0.001");
+const QString testFromAmount("0.002");
 const QString testToAmount("0.001");
 
 //******************************************************************************
@@ -148,7 +148,7 @@ void XBridgeView::onSendTransaction()
     }
 
     double fromAmount      = m_amountFrom->text().toDouble();
-    double toAmount        = m_amountFrom->text().toDouble();
+    double toAmount        = m_amountTo->text().toDouble();
     if (fromAmount == 0 || toAmount == 0)
     {
         QMessageBox::warning(this, trUtf8("check parameters"), trUtf8("Invalid amount"));
