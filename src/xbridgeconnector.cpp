@@ -29,9 +29,31 @@ XBridgeConnector & xbridge()
 //******************************************************************************
 //******************************************************************************
 XBridgeConnector::XBridgeConnector()
-    : m_socket(m_io)
+    : m_ip("127.0.0.1")
+    , m_port(SERVER_LISTEN_PORT)
+    , m_socket(m_io)
     , m_timer(m_io, boost::posix_time::seconds(TIMER_INTERVAL))
 {
+    std::string addr = GetArg("-xbridge-address", "");
+    if (addr.size())
+    {
+        int pos = addr.find(':');
+        if (pos == -1)
+        {
+            m_ip = addr;
+        }
+        else
+        {
+            m_ip = addr.substr(0, pos);
+            addr = addr.substr(pos+1, addr.length()-pos-1);
+            int port = atoi(addr);
+            if (port)
+            {
+                m_port = port;
+            }
+        }
+    }
+
     m_processors[xbcInvalid]          .bind(this, &XBridgeConnector::processInvalid);
     m_processors[xbcXChatMessage]     .bind(this, &XBridgeConnector::processXChatMessage);
 
@@ -68,7 +90,7 @@ void XBridgeConnector::onTimer()
     if (!m_socket.is_open())
     {
         // connect to localhost
-        boost::asio::ip::tcp::endpoint ep(boost::asio::ip::address::from_string("127.0.0.1"), SERVER_LISTEN_PORT);
+        boost::asio::ip::tcp::endpoint ep(boost::asio::ip::address::from_string(m_ip), m_port);
 
         boost::system::error_code error;
         m_socket.connect(ep, error);

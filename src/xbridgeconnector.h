@@ -101,6 +101,9 @@ private:
     bool processTransactionDropped(XBridgePacketPtr packet);
 
 private:
+    std::string                  m_ip;
+    boost::uint32_t              m_port;
+
     boost::asio::io_service      m_io;
     boost::asio::ip::tcp::socket m_socket;
     boost::thread                m_thread;
