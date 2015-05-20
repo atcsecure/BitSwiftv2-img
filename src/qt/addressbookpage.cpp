@@ -1,3 +1,6 @@
+//*****************************************************************************
+//*****************************************************************************
+
 #include "addressbookpage.h"
 #include "ui_addressbookpage.h"
 
@@ -67,16 +70,16 @@ AddressBookPage::AddressBookPage(Mode mode, Tabs tab, QWidget *parent) :
     }
 
     // Context menu actions
-    QAction *copyLabelAction = new QAction(tr("Copy &Label"), this);
-    QAction *copyAddressAction = new QAction(ui->copyToClipboard->text(), this);
-    QAction * copyPubKey = new QAction(trUtf8("Copy public &key"), this);
+    QAction * copyLabelAction     = new QAction(tr("Copy &Label"), this);
+    QAction * copyAddressAction   = new QAction(ui->copyToClipboard->text(), this);
+    QAction * copyPubKey          = new QAction(trUtf8("Copy public &key"), this);
     QAction * copyXBridgeAddress  = new QAction(trUtf8("Copy &XBridge address"), this);
-    QAction *editAction = new QAction(tr("&Edit"), this);
-    QAction *showQRCodeAction = new QAction(ui->showQRCode->text(), this);
-    QAction *signMessageAction = new QAction(ui->signMessage->text(), this);
-    QAction *verifyMessageAction = new QAction(ui->verifyMessage->text(), this);
-    QAction * messagesAction = new QAction(trUtf8("M&essages"), this);
-    deleteAction = new QAction(ui->deleteButton->text(), this);
+    QAction * editAction          = new QAction(tr("&Edit"), this);
+    QAction * showQRCodeAction    = new QAction(ui->showQRCode->text(), this);
+    QAction * signMessageAction   = new QAction(ui->signMessage->text(), this);
+    QAction * verifyMessageAction = new QAction(ui->verifyMessage->text(), this);
+    QAction * messagesAction      = new QAction(trUtf8("M&essages"), this);
+    deleteAction                  = new QAction(ui->deleteButton->text(), this);
 
     // Build context menu
     contextMenu = new QMenu();

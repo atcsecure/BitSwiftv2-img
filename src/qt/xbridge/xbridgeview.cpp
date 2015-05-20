@@ -45,38 +45,41 @@ void XBridgeView::setupUI()
 {
     QGridLayout * grid = new QGridLayout;
 
-    QLabel * l = new QLabel(trUtf8("from"), this);
-    grid->addWidget(l, 0, 0, 1, 1);
+    QLabel * l = new QLabel(QString::fromStdString(xbridge().xbridgeAddressAndPort()), this);
+    grid->addWidget(l, 0, 0, 1, 5);
+
+    l = new QLabel(trUtf8("from"), this);
+    grid->addWidget(l, 1, 0, 1, 1);
 
     l = new QLabel(trUtf8("to"), this);
-    grid->addWidget(l, 0, 4, 1, 1, Qt::AlignRight);
+    grid->addWidget(l, 1, 4, 1, 1, Qt::AlignRight);
 
     m_addressFrom = new QLineEdit(this);
     m_addressFrom->setText(testFrom);
-    grid->addWidget(m_addressFrom, 1, 0, 1, 2);
+    grid->addWidget(m_addressFrom, 2, 0, 1, 2);
 
     m_addressTo = new QLineEdit(this);
     m_addressTo->setText(testTo);
-    grid->addWidget(m_addressTo, 1, 3, 1, 2);
+    grid->addWidget(m_addressTo, 2, 3, 1, 2);
 
     m_amountFrom = new QLineEdit(this);
     m_amountFrom->setText(testFromAmount);
-    grid->addWidget(m_amountFrom, 2, 0, 1, 1);
+    grid->addWidget(m_amountFrom, 3, 0, 1, 1);
 
     m_currencyFrom = new QComboBox(this);
     m_currencyFrom->setModel(&m_walletsModel);
-    grid->addWidget(m_currencyFrom, 2, 1, 1, 1);
+    grid->addWidget(m_currencyFrom, 3, 1, 1, 1);
 
     m_amountTo = new QLineEdit(this);
     m_amountTo->setText(testToAmount);
-    grid->addWidget(m_amountTo, 2, 3, 1, 1);
+    grid->addWidget(m_amountTo, 3, 3, 1, 1);
 
     m_currencyTo = new QComboBox(this);
     m_currencyTo->setModel(&m_walletsModel);
-    grid->addWidget(m_currencyTo, 2, 4, 1, 1);
+    grid->addWidget(m_currencyTo, 3, 4, 1, 1);
 
     l = new QLabel(trUtf8(" --- >>> "), this);
-    grid->addWidget(l, 0, 2, 3, 1, Qt::AlignHCenter | Qt::AlignCenter);
+    grid->addWidget(l, 1, 2, 3, 1, Qt::AlignHCenter | Qt::AlignCenter);
 
     m_btnSend = new QPushButton(trUtf8("send transaction"), this);
     m_btnSend->setEnabled(false);
@@ -85,7 +88,7 @@ void XBridgeView::setupUI()
     hbox->addStretch();
     hbox->addWidget(m_btnSend);
 
-    grid->addLayout(hbox, 3, 0, 1, 5);
+    grid->addLayout(hbox, 4, 0, 1, 5);
 
     QVBoxLayout * vbox = new QVBoxLayout;
     vbox->addLayout(grid);

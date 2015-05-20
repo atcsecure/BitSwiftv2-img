@@ -5,51 +5,25 @@
 #define XBRIDGECONNECTOR_H
 
 #include "xbridgepacket.h"
-#include "message.h"
-#include "FastDelegate.h"
+#include "xbridgelowlevel.h"
+#include "xbridgetransaction.h"
 
-#include <boost/asio.hpp>
-#include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 
-//******************************************************************************
-//******************************************************************************
-struct XBridgeTransaction
-{
-    uint256 id;
-    std::vector<unsigned char> from;
-    std::string fromCurrency;
-    boost::uint64_t fromAmount;
-    std::vector<unsigned char> to;
-    std::string toCurrency;
-    boost::uint64_t toAmount;
-
-    // TODO add transaction state for gui
-
-    XBridgePacketPtr packet;
-};
-
-typedef boost::shared_ptr<XBridgeTransaction> XBridgeTransactionPtr;
 
 //******************************************************************************
 //******************************************************************************
-class XBridgeConnector
+class XBridgeConnector : public XBridgeLowLevel
 {
     friend XBridgeConnector & xbridge();
 
 private:
     XBridgeConnector();
 
-    enum
-    {
-        SERVER_LISTEN_PORT = 30330,
-        TIMER_INTERVAL = 60
-    };
+private:
+    virtual void handleTimer();
 
 public:
-    bool connect();
-    bool isConnected() const;
-
     bool announceLocalAddresses();
     bool sendXChatMessage(const Message & m);
 
@@ -63,56 +37,19 @@ public:
     bool transactionReceived(const uint256 & hash);
 
 private:
-    void run();
-
-    void disconnect();
-
-    void onTimer();
-
-    void doReadHeader(XBridgePacketPtr packet,
-                      const std::size_t offset = 0);
-    void onReadHeader(XBridgePacketPtr packet,
-                      const std::size_t offset,
-                      const boost::system::error_code & error,
-                      std::size_t transferred);
-
-    void doReadBody(XBridgePacketPtr packet,
-                    const std::size_t offset = 0);
-    void onReadBody(XBridgePacketPtr packet,
-                    const std::size_t offset,
-                    const boost::system::error_code & error,
-                    std::size_t transferred);
-
-    bool sendPacket(XBridgePacket & packet);
-
-    bool encryptPacket(XBridgePacketPtr packet);
-    bool decryptPacket(XBridgePacketPtr packet);
-    bool processPacket(XBridgePacketPtr packet);
-
     bool processInvalid(XBridgePacketPtr packet);
     bool processXChatMessage(XBridgePacketPtr packet);
 
     bool processExchangeWallets(XBridgePacketPtr packet);
 
     bool processTransactionHold(XBridgePacketPtr packet);
-    bool processTransactionPay(XBridgePacketPtr packet);
+    bool processTransactionCreate(XBridgePacketPtr packet);
+    bool processTransactionSign(XBridgePacketPtr packet);
     bool processTransactionCommit(XBridgePacketPtr packet);
     bool processTransactionFinished(XBridgePacketPtr packet);
     bool processTransactionDropped(XBridgePacketPtr packet);
 
 private:
-    std::string                  m_ip;
-    boost::uint32_t              m_port;
-
-    boost::asio::io_service      m_io;
-    boost::asio::ip::tcp::socket m_socket;
-    boost::thread                m_thread;
-    boost::asio::deadline_timer  m_timer;
-
-
-    typedef std::map<const int, fastdelegate::FastDelegate1<XBridgePacketPtr, bool> > PacketProcessorsMap;
-    PacketProcessorsMap m_processors;
-
     boost::mutex                             m_txLocker;
     std::map<uint256, XBridgeTransactionPtr> m_pendingTransactions;
     std::map<uint256, XBridgeTransactionPtr> m_transactions;
