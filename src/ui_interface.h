@@ -17,6 +17,7 @@ class CBasicKeyStore;
 class CWallet;
 class uint256;
 class Message;  //xbridgecode
+struct XBridgeTransactionDescr;
 
 /** General change type (added, updated, removed). */
 enum ChangeType
@@ -93,8 +94,8 @@ public:
      */
     boost::signals2::signal<void (const uint256 &hash, ChangeType status)> NotifyAlertChanged;
 
-	 /**
-     * @brief NotifyNewMessage XBRDIGECODE
+    /**
+     * @brief NotifyNewMessage
      * called when new message received
      */
     boost::signals2::signal<void (const Message & message)> NotifyNewMessage;
@@ -104,6 +105,11 @@ public:
      */
     typedef std::pair<std::string, std::string> StringPair;
     boost::signals2::signal<void (const std::vector<StringPair> & status)> NotifyXBridgeExchangeWalletsReceived;
+
+    /**
+     * @brief NotifyXBridgePendingTransactionReceived
+     */
+    boost::signals2::signal<void (const XBridgeTransactionDescr & tx)> NotifyXBridgePendingTransactionReceived;
 };
 
 extern CClientUIInterface uiInterface;

@@ -142,7 +142,6 @@ SOURCES += src/txdb-leveldb.cpp \
 	src/message.cpp \
     src/messagedb.cpp \
     src/xbridgeconnector.cpp \
-    src/qt/xbridge/xbridgeview.cpp \
     src/xbridgelowlevel.cpp
 
 !win32 {
@@ -347,7 +346,11 @@ HEADERS += src/qt/bitcoingui.h \
     src/FastDelegate.h \
     src/qt/xbridge/xbridgeview.h \
     src/xbridgelowlevel.h \
-    src/xbridgetransaction.h
+    src/xbridgetransaction.h \
+    src/qt/xbridge/xbridgetransactionsmodel.h \
+    src/qt/xbridge/xbridgetransactionsview.h \
+    src/xbridgetransactiondescr.h \
+    src/qt/xbridge/xbridgetransactiondialog.h
 
 SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/qt/transactiontablemodel.cpp \
@@ -422,7 +425,10 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
 	src/smessage.cpp \
     src/qt/chatwindow.cpp \
 	src/qt/backuppage.cpp \
-    src/qt/blockbrowser.cpp
+    src/qt/blockbrowser.cpp \
+    src/qt/xbridge/xbridgetransactionsmodel.cpp \
+    src/qt/xbridge/xbridgetransactionsview.cpp \
+    src/qt/xbridge/xbridgetransactiondialog.cpp
 
 	
 	
