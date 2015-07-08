@@ -156,7 +156,13 @@ OBJS= \
     obj/scrypt.o \
     obj/scrypt-arm.o \
     obj/scrypt-x86.o \
-    obj/scrypt-x86_64.o 
+    obj/scrypt-x86_64.o \
+    obj/message.o \
+    obj/messagedb.o \
+    obj/lz4/lz4.o \
+    obj/xbridgeconnector.o \
+    obj/xbridgelowlevel.o
+
 
 all: bitswiftd
 
