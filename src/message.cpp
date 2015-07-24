@@ -670,12 +670,14 @@ bool Message::decrypt(const CKey & _receiverKey, bool & isMessageForMy,
             }
         }
 
-        // TODO disable for blocknet testing
-//        if (!(coinAddrFrom == coinAddrFromSig))
-//        {
-//            // signature valifation failed
-//            return false;
-//        }
+        if (!(coinAddrFrom == coinAddrFromSig))
+        {
+            // signature valifation failed
+
+            // TODO
+            // temporary disabled for xchat
+            return false;
+        }
     }
 
     return true;
