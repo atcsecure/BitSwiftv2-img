@@ -521,6 +521,7 @@ void BitcoinGUI::setWalletModel(WalletModel *walletModel)
         sendCoinsPage->setModel(walletModel);
         signVerifyMessageDialog->setModel(walletModel);
         messagesPage->setWalletModel(walletModel);
+        xbridgeTxView->setWalletModel(walletModel);
 
         statisticsPage->setModel(clientModel);
 //      tradePage->setModel(clientModel);
