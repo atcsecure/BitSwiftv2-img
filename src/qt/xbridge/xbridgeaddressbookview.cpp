@@ -35,7 +35,7 @@ void XBridgeAddressBookView::onAddressSelect(QModelIndex index)
 void XBridgeAddressBookView::setupUi()
 {
     m_entryList = new QTableView(this);
-    m_entryList->setMidLineWidth(640);
+    m_entryList->setMinimumWidth(600);
     m_entryList->setModel(&m_model);
     m_entryList->setSelectionBehavior(QAbstractItemView::SelectRows);
 
