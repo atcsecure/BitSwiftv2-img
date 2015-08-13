@@ -18,6 +18,8 @@ UI_DIR = build
 QMAKE_CXXFLAGS = -fpermissive
 win32:QMAKE_LFLAGS *= -Wl,--large-address-aware # -static
 
+QMAKE_CXXFLAGS += -std=c++11
+
 greaterThan(QT_MAJOR_VERSION, 4) {
     QT += widgets
     DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0
@@ -60,7 +62,7 @@ QMAKE_LFLAGS *= -fstack-protector-all --param ssp-buffer-size=1
 #win32:QMAKE_LFLAGS += -static-libgcc -static-libstdc++
 #win32:QMAKE_LFLAGS *= -Wl,--large-address-aware -static
 win32:QMAKE_LFLAGS *= -Wl,--dynamicbase -Wl,--nxcompat
-QMAKE_CXXFLAGS = -fpermissive
+#QMAKE_CXXFLAGS = -fpermissive
 
 # use: qmake "USE_QRCODE=1"
 # libqrencode (http://fukuchi.org/works/qrencode/index.en.html) must be installed for support
