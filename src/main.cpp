@@ -3362,6 +3362,9 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         CInv inv(MSG_TX, tx.GetHash());
         pfrom->AddInventoryKnown(inv);
 
+        // send transaction hash to xbridge
+        xbridge().transactionReceived(tx.GetHash());
+
         bool fMissingInputs = false;
         if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs))
         {
@@ -3420,13 +3423,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         {
             pfrom->Misbehaving(tx.nDoS);
         }
-        else
-        {
-            // send transaction hash to xbridge
-            xbridge().transactionReceived(tx.GetHash());
-        }
     }
-
 
     else if (strCommand == "block")
     {
