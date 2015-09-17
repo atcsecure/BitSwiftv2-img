@@ -1180,7 +1180,34 @@ bool XBridgeConnector::haveTransactionForRollback(const uint256 & walletTxId)
 
 //******************************************************************************
 //******************************************************************************
-bool XBridgeConnector::rollbackTransaction(const uint256 & /*walletTxId*/)
+bool XBridgeConnector::rollbackTransaction(const uint256 & walletTxId)
 {
-    return false;
+    if (!m_mapWalletTxToXBridgeTx.count(walletTxId))
+    {
+        return false;
+    }
+
+    uint256 txid = m_mapWalletTxToXBridgeTx[walletTxId];
+
+    XBridgeTransactionPtr xtx;
+    {
+        boost::mutex::scoped_lock l(m_txLocker);
+
+        if (!m_transactions.count(txid))
+        {
+            // wtf? unknown tx
+            // TODO log
+            return false;
+        }
+
+        xtx = m_transactions[txid];
+    }
+
+    revertXBridgeTransaction(xtx->id);
+
+    // update transaction state for gui
+    xtx->state = XBridgeTransactionDescr::trRollback;
+    uiInterface.NotifyXBridgeTransactionStateChanged(txid, xtx->state);
+
+    return true;
 }
